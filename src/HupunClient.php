@@ -1,5 +1,5 @@
 <?php
-namespace Xlstudio\Hunpun;
+namespace Xlstudio\Hupun;
 
 class HupunClient
 {
@@ -292,7 +292,7 @@ class HupunClient
 
         //如果HUPUN返回了错误码，记录到业务错误日志中
         if ($respObject->error_code) {
-            $logger = new HunpunLogger;
+            $logger = new HupunLogger;
             $logger->conf['log_file'] = rtrim($this->hupunSdkWorkDir, '\\/') . '/' . 'logs/hupun_biz_err_' . $this->appkey . '_' . date('Y-m-d') . '.log';
             $logger->log([
                 date('Y-m-d H:i:s'),

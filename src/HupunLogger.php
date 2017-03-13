@@ -1,7 +1,7 @@
 <?php
-namespace Xlstudio\Hunpun;
+namespace Xlstudio\Hupun;
 
-class HunpunLogger
+class HupunLogger
 {
     public $conf = [
         'separator' => "\t",
