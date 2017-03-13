@@ -1,0 +1,23 @@
+{
+    "name": "xlstudio/hupun-openapi-php-sdk",
+    "description": "万里牛ERP开放接口的 PHP SDK",
+    "keywords": ["hupun", "wanliniu", "erp", "api", "sdk"],
+    "authors": [
+        {
+            "name": "Xiphin",
+            "email": "Xiphin@qq.com"
+        }
+    ],
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": ">= 5.4.0",
+        "ext-curl": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Xlstudio\\Hupun\\": "src/"
+        }
+    },
+    "minimum-stability": "dev"
+}
