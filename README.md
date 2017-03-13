@@ -7,7 +7,7 @@ composer require xlstudio/hupun dev-master
 ## 使用方法
 单笔查询库存的接口
 ```php
-use Xlstudio\Hunpun\HupunClient;
+use Xlstudio\Hupun\HupunClient;
 
 $hupunclient = new HupunClient('填写你申请的appKey','填写你申请的appSecret');
 $hupunclient->gatewayUrl = 'http://103.235.242.21/open/api'; // 测试环境，正式环境可以不需要
