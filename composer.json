@@ -1,5 +1,5 @@
 {
-    "name": "xlstudio/hupun-openapi-php-sdk",
+    "name": "xlstudio/hupun",
     "description": "万里牛ERP开放接口的 PHP SDK",
     "keywords": ["hupun", "wanliniu", "erp", "api", "sdk"],
     "authors": [
