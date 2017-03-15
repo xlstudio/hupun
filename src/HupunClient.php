@@ -27,7 +27,7 @@ class HupunClient
     public function __construct($appkey = '', $secretKey = '')
     {
         $this->appkey = $appkey;
-        $this->secretKey = $secretKey ;
+        $this->secretKey = $secretKey;
     }
 
     protected function generateSign($params)
