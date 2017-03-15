@@ -305,6 +305,6 @@ class HupunClient
     private function getMillisecond()
     {
         list($t1, $t2) = explode(' ', microtime());
-        return (string)sprintf('%.0f', (floatval($t1) + floatval($t2)) * 1000);
+        return (int)sprintf('%.0f', (floatval($t1) + floatval($t2)) * 1000);
     }
 }
