@@ -1,35 +1,70 @@
 <?php
+
 namespace Xlstudio\Hupun;
 
 class HupunClient
 {
-    public $appkey;
-
-    public $secretKey;
-
-    public $gatewayUrl = 'http://open.hupun.com/api';
-
-    public $format = 'json';
-
-    public $connectTimeout;
-
-    public $readTimeout;
-
+    protected $appkey;
+    
+    protected $secretKey;
+    
+    protected $gatewayUrl = 'http://open.hupun.com/api';
+    
+    protected $format = 'json';
+    
+    protected $connectTimeout;
+    
+    protected $readTimeout;
+    
     /** 日志存放的工作目录**/
-    public $hupunSdkWorkDir = './data/';
+    protected $hupunSdkWorkDir = './data/';
 
     protected $signMethod = 'md5';
 
     protected $apiVersion = 'v1';
 
-    protected $sdkVersion = 'hupun-openapi-php-sdk-20170313';
+    protected $sdkVersion = 'hupun-openapi-php-sdk-20170327';
 
-    public function __construct($appkey = '', $secretKey = '')
+    public function __construct($appkey = '', $secretKey = '', $options = [])
     {
         $this->appkey = $appkey;
         $this->secretKey = $secretKey;
+        
+        if ($options) {
+            if ($options['api_url']) {
+                $this->gatewayUrl = $options['api_url'];
+            }
+            if ($options['api_work_dir']) {
+                $this->hupunSdkWorkDir = $options['api_work_dir'];
+            }
+        }
     }
 
+    public function setGatewayUrl($gatewayUrl)
+    {
+        $this->gatewayUrl = $gatewayUrl;
+    }
+
+    public function setFormat($format)
+    {
+        $this->format = $format;
+    }
+
+    public function setConnectTimeout($connectTimeout)
+    {
+        $this->connectTimeout = $connectTimeout;
+    }
+
+    public function setReadTimeout($readTimeout)
+    {
+        $this->readTimeout = $readTimeout;
+    }
+
+    public function setHupunSdkWorkDir($hupunSdkWorkDir)
+    {
+        $this->hupunSdkWorkDir = $hupunSdkWorkDir;
+    }
+    
     protected function generateSign($params)
     {
         ksort($params);
@@ -59,7 +94,7 @@ class HupunClient
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $this->connectTimeout);
         }
         curl_setopt ( $ch, CURLOPT_USERAGENT, 'hupun-openapi-php-sdk');
-        //https 请求
+        // https 请求
         if (strlen($url) > 5 && strtolower(substr($url, 0, 5)) == 'https') {
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
@@ -73,9 +108,9 @@ class HupunClient
                 if (!is_string($v)) {
                     continue;
                 }
-                if ('@' != substr($v, 0, 1)) {//判断是不是文件上传
+                if ('@' != substr($v, 0, 1)) {// 判断是不是文件上传
                     $postBodyString .= "$k=" . urlencode($v) . '&';
-                } else {//文件上传用multipart/form-data，否则用www-form-urlencoded
+                } else {// 文件上传用multipart/form-data，否则用www-form-urlencoded
                     $postMultipart = true;
                     if (class_exists('\CURLFile')) {
                         $postFields[$k] = new \CURLFile(substr($v, 1));
@@ -105,11 +140,11 @@ class HupunClient
         $reponse = curl_exec($ch);
 
         if (curl_errno($ch)) {
-            throw new Exception(curl_error($ch), 0);
+            throw new \Exception(curl_error($ch), 0);
         } else {
             $httpStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             if (200 !== $httpStatusCode) {
-                throw new Exception($reponse, $httpStatusCode);
+                throw new \Exception($reponse, $httpStatusCode);
             }
         }
 
@@ -129,29 +164,29 @@ class HupunClient
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $this->connectTimeout);
         }
         curl_setopt($ch, CURLOPT_USERAGENT, 'hupun-openapi-php-sdk');
-        //https 请求
+        // https 请求
         if (strlen($url) > 5 && strtolower(substr($url, 0, 5)) == 'https') {
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         }
 
-        //生成分隔符
+        // 生成分隔符
         $delimiter = '-------------' . uniqid();
 
-        //先将post的普通数据生成主体字符串
+        // 先将post的普通数据生成主体字符串
         $data = '';
 
         if (null != $postFields) {
             foreach ($postFields as $name => $content) {
                 $data .= '--' . $delimiter . "\r\n";
                 $data .= 'Content-Disposition: form-data; name="' . $name . '"';
-                //multipart/form-data 不需要urlencode，参见 http:stackoverflow.com/questions/6603928/should-i-url-encode-post-data
+                // multipart/form-data 不需要urlencode，参见 http:stackoverflow.com/questions/6603928/should-i-url-encode-post-data
                 $data .= "\r\n\r\n" . $content . "\r\n";
             }
             unset($name, $content);
         }
 
-        //将上传的文件生成主体字符串
+        // 将上传的文件生成主体字符串
         if (null != $fileFields) {
             foreach ($fileFields as $name => $file) {
                 $data .= '--' . $delimiter . "\r\n";
@@ -163,14 +198,14 @@ class HupunClient
             unset($name, $file);
         }
 
-        //主体结束的分隔符
+        // 主体结束的分隔符
         $data .= '--' . $delimiter . '--';
 
         curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Content-Type: multipart/form-data; boundary=' . $delimiter,
-            'Content-Length: ' . strlen($data))
-        );
+            'Content-Length: ' . strlen($data)
+        ]);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
 
@@ -178,11 +213,11 @@ class HupunClient
         unset($data);
 
         if (curl_errno($ch)) {
-            throw new Exception(curl_error($ch), 0);
+            throw new \Exception(curl_error($ch), 0);
         } else {
             $httpStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             if (200 !== $httpStatusCode) {
-                throw new Exception($reponse, $httpStatusCode);
+                throw new \Exception($reponse, $httpStatusCode);
             }
         }
 
@@ -211,7 +246,7 @@ class HupunClient
     }
     public function execute($request, $params, $method = 'post', $bestUrl = null)
     {
-        //组装系统参数
+        // 组装系统参数
         $sysParams['app_key'] = $this->appkey;
         $sysParams['format'] = $this->format;
         $sysParams['timestamp'] = $this->getMillisecond();
@@ -219,13 +254,13 @@ class HupunClient
         $apiParams = [];
         $apiParams = $params;
 
-        //系统参数放入GET请求串
+        // 系统参数放入GET请求串
         if ($bestUrl) {
             $requestUrl = $bestUrl.'/'.$this->apiVersion.$request.'?';
         } else {
             $requestUrl = $this->gatewayUrl.'/'.$this->apiVersion.$request.'?';
         }
-        //签名
+        // 签名
         $sysParams['sign'] = $this->generateSign(array_merge($apiParams, $sysParams));
 
         foreach ($sysParams as $sysParamKey => $sysParamValue) {
@@ -247,7 +282,7 @@ class HupunClient
         // $requestUrl .= 'timestamp=' . urlencode($sysParams['timestamp']) . '&';
         $requestUrl = substr($requestUrl, 0, -1);
 
-        //发起HTTP请求
+        // 发起HTTP请求
         try {
             if (count($fileFields) > 0) {
                 $resp = $this->curl_with_memory_file($requestUrl, $apiParams, $fileFields);
@@ -256,7 +291,7 @@ class HupunClient
             } else {
                 $resp = $this->curl($requestUrl, $apiParams);
             }
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $this->logCommunicationError($request, $requestUrl, 'HTTP_ERROR_' . $e->getCode(), $e->getMessage());
             $result->success = false;
             $result->error_code = $e->getCode();
@@ -267,7 +302,7 @@ class HupunClient
         unset($apiParams);
         unset($fileFields);
 
-        //解析HUPUN返回结果
+        // 解析HUPUN返回结果
         $respWellFormed = false;
         if ('json' == $this->format) {
             $respObject = json_decode($resp);
@@ -281,16 +316,17 @@ class HupunClient
             }
         }
 
-        //返回的HTTP文本不是标准JSON或者XML，记下错误日志
+        // 返回的HTTP文本不是标准JSON或者XML，记下错误日志
         if (false === $respWellFormed) {
             $this->logCommunicationError($request, $requestUrl, 'HTTP_RESPONSE_NOT_WELL_FORMED', $resp);
+            $result = new \stdClass();
             $result->success = false;
-            $result->error_code = 0;
+            $result->error_code = '0';
             $result->error_msg = 'HTTP_RESPONSE_NOT_WELL_FORMED';
             return $result;
         }
 
-        //如果HUPUN返回了错误码，记录到业务错误日志中
+        // 如果HUPUN返回了错误码，记录到业务错误日志中
         if ($respObject->error_code) {
             $logger = new HupunLogger;
             $logger->conf['log_file'] = rtrim($this->hupunSdkWorkDir, '\\/') . '/' . 'logs/hupun_biz_err_' . $this->appkey . '_' . date('Y-m-d') . '.log';
@@ -302,9 +338,9 @@ class HupunClient
         return $respObject;
     }
 
-    private function getMillisecond()
+    public function getMillisecond()
     {
         list($t1, $t2) = explode(' ', microtime());
-        return (int)sprintf('%.0f', (floatval($t1) + floatval($t2)) * 1000);
+        return sprintf('%.0f', (floatval($t1) + floatval($t2)) * 1000);
     }
 }

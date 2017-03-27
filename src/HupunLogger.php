@@ -1,4 +1,5 @@
 <?php
+
 namespace Xlstudio\Hupun;
 
 class HupunLogger
