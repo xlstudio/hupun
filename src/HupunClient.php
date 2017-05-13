@@ -293,6 +293,7 @@ class HupunClient
             }
         } catch (\Exception $e) {
             $this->logCommunicationError($request, $requestUrl, 'HTTP_ERROR_' . $e->getCode(), $e->getMessage());
+            $result = new \stdClass();
             $result->success = false;
             $result->error_code = $e->getCode();
             $result->error_msg = $e->getMessage();
