@@ -16,14 +16,14 @@ class HupunClient
     
     protected $readTimeout;
     
-    /** 日志存放的工作目录**/
+    // 日志存放的工作目录
     protected $hupunSdkWorkDir = './data/';
 
     protected $signMethod = 'md5';
 
     protected $apiVersion = 'v1';
 
-    protected $sdkVersion = 'hupun-openapi-php-sdk-20170327';
+    protected $sdkVersion = 'hupun-openapi-php-sdk-20170719';
 
     public function __construct($appkey = '', $secretKey = '', $options = [])
     {
@@ -93,7 +93,7 @@ class HupunClient
         if ($this->connectTimeout) {
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $this->connectTimeout);
         }
-        curl_setopt ( $ch, CURLOPT_USERAGENT, 'hupun-openapi-php-sdk');
+        curl_setopt($ch, CURLOPT_USERAGENT, 'hupun-openapi-php-sdk');
         // https 请求
         if (strlen($url) > 5 && strtolower(substr($url, 0, 5)) == 'https') {
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -110,7 +110,7 @@ class HupunClient
                 }
                 if ('@' != substr($v, 0, 1)) {// 判断是不是文件上传
                     $postBodyString .= "$k=" . urlencode($v) . '&';
-                } else {// 文件上传用multipart/form-data，否则用www-form-urlencoded
+                } else {// 文件上传用 multipart/form-data，否则用 www-form-urlencoded
                     $postMultipart = true;
                     if (class_exists('\CURLFile')) {
                         $postFields[$k] = new \CURLFile(substr($v, 1));
@@ -151,6 +151,7 @@ class HupunClient
         curl_close($ch);
         return $reponse;
     }
+
     public function curl_with_memory_file($url, $postFields = null, $fileFields = null)
     {
         $ch = curl_init();
@@ -173,14 +174,14 @@ class HupunClient
         // 生成分隔符
         $delimiter = '-------------' . uniqid();
 
-        // 先将post的普通数据生成主体字符串
+        // 先将 post 的普通数据生成主体字符串
         $data = '';
 
         if (null != $postFields) {
             foreach ($postFields as $name => $content) {
                 $data .= '--' . $delimiter . "\r\n";
                 $data .= 'Content-Disposition: form-data; name="' . $name . '"';
-                // multipart/form-data 不需要urlencode，参见 http:stackoverflow.com/questions/6603928/should-i-url-encode-post-data
+                // multipart/form-data 不需要 urlencode，参见 http://stackoverflow.com/questions/6603928/should-i-url-encode-post-data
                 $data .= "\r\n\r\n" . $content . "\r\n";
             }
             unset($name, $content);
@@ -191,7 +192,7 @@ class HupunClient
             foreach ($fileFields as $name => $file) {
                 $data .= '--' . $delimiter . "\r\n";
                 $data .= 'Content-Disposition: form-data; name="' . $name . '"; filename="' . $file['name'] . "\" \r\n";
-                $data .= 'Content-Type: ' . $file['type'] . "\r\n\r\n";//多了个文档类型
+                $data .= 'Content-Type: ' . $file['type'] . "\r\n\r\n";// 多了个文档类型
 
                 $data .= $file['content'] . "\r\n";
             }
@@ -244,6 +245,7 @@ class HupunClient
         ];
         $logger->log($logData);
     }
+
     public function execute($request, $params, $method = 'post', $bestUrl = null)
     {
         // 组装系统参数
@@ -256,9 +258,9 @@ class HupunClient
 
         // 系统参数放入GET请求串
         if ($bestUrl) {
-            $requestUrl = $bestUrl.'/'.$this->apiVersion.$request.'?';
+            $requestUrl = $bestUrl . '/' . $this->apiVersion . $request . '?';
         } else {
-            $requestUrl = $this->gatewayUrl.'/'.$this->apiVersion.$request.'?';
+            $requestUrl = $this->gatewayUrl . '/' . $this->apiVersion . $request . '?';
         }
         // 签名
         $sysParams['sign'] = $this->generateSign(array_merge($apiParams, $sysParams));
@@ -333,9 +335,13 @@ class HupunClient
             $logger->conf['log_file'] = rtrim($this->hupunSdkWorkDir, '\\/') . '/' . 'logs/hupun_biz_err_' . $this->appkey . '_' . date('Y-m-d') . '.log';
             $logger->log([
                 date('Y-m-d H:i:s'),
+                $request,
+                json_encode($params),
+                $requestUrl,
                 $resp
             ]);
         }
+
         return $respObject;
     }
 
