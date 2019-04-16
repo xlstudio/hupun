@@ -6,7 +6,7 @@ class HupunLogger
 {
     public $conf = [
         'separator' => "\t",
-        'log_file' => ''
+        'log_file' => '',
     ];
 
     private $fileHandle;
@@ -23,6 +23,7 @@ class HupunLogger
             }
             $this->fileHandle = fopen($this->conf['log_file'], 'a');
         }
+
         return $this->fileHandle;
     }
 
@@ -34,7 +35,7 @@ class HupunLogger
         if (is_array($logData)) {
             $logData = implode($this->conf['separator'], $logData);
         }
-        $logData = $logData. "\n";
+        $logData = $logData . "\n";
         fwrite($this->getFileHandle(), $logData);
     }
 }
