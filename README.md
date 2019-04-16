@@ -10,7 +10,7 @@ composer require xlstudio/hupun dev-master
 use Xlstudio\Hupun\HupunClient;
 
 $hupunclient = new HupunClient('填写你申请的appKey','填写你申请的appSecret');
-$hupunclient->setGatewayUrl('http://103.237.6.86/open/api'); // 万里牛正式环境或测试环境的API地址
+$hupunclient->setGatewayUrl('http://114.67.231.99/open/api'); // 万里牛正式环境或测试环境的API地址
 $hupunclient->setHupunSdkWorkDir('./data/'); // 日志存放的工作目录
 
 $params['shop_type'] = 100;
