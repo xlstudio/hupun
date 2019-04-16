@@ -5,17 +5,17 @@ namespace Xlstudio\Hupun;
 class HupunClient
 {
     protected $appkey;
-    
+
     protected $secretKey;
-    
-    protected $gatewayUrl = 'http://open.hupun.com/api';
-    
+
+    protected $gatewayUrl = 'https://erp-open.hupun.com/api';
+
     protected $format = 'json';
-    
+
     protected $connectTimeout;
-    
+
     protected $readTimeout;
-    
+
     // 日志存放的工作目录
     protected $hupunSdkWorkDir = './data/';
 
@@ -29,7 +29,7 @@ class HupunClient
     {
         $this->appkey = $appkey;
         $this->secretKey = $secretKey;
-        
+
         if ($options) {
             if ($options['api_url']) {
                 $this->gatewayUrl = $options['api_url'];
@@ -64,7 +64,7 @@ class HupunClient
     {
         $this->hupunSdkWorkDir = $hupunSdkWorkDir;
     }
-    
+
     protected function generateSign($params)
     {
         ksort($params);
@@ -95,7 +95,7 @@ class HupunClient
         }
         curl_setopt($ch, CURLOPT_USERAGENT, 'hupun-openapi-php-sdk');
         // https 请求
-        if (strlen($url) > 5 && strtolower(substr($url, 0, 5)) == 'https') {
+        if (strlen($url) > 5 && 'https' == strtolower(substr($url, 0, 5))) {
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         }
@@ -149,6 +149,7 @@ class HupunClient
         }
 
         curl_close($ch);
+
         return $reponse;
     }
 
@@ -166,7 +167,7 @@ class HupunClient
         }
         curl_setopt($ch, CURLOPT_USERAGENT, 'hupun-openapi-php-sdk');
         // https 请求
-        if (strlen($url) > 5 && strtolower(substr($url, 0, 5)) == 'https') {
+        if (strlen($url) > 5 && 'https' == strtolower(substr($url, 0, 5))) {
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         }
@@ -192,7 +193,7 @@ class HupunClient
             foreach ($fileFields as $name => $file) {
                 $data .= '--' . $delimiter . "\r\n";
                 $data .= 'Content-Disposition: form-data; name="' . $name . '"; filename="' . $file['name'] . "\" \r\n";
-                $data .= 'Content-Type: ' . $file['type'] . "\r\n\r\n";// 多了个文档类型
+                $data .= 'Content-Type: ' . $file['type'] . "\r\n\r\n"; // 多了个文档类型
 
                 $data .= $file['content'] . "\r\n";
             }
@@ -205,7 +206,7 @@ class HupunClient
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Content-Type: multipart/form-data; boundary=' . $delimiter,
-            'Content-Length: ' . strlen($data)
+            'Content-Length: ' . strlen($data),
         ]);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
@@ -223,13 +224,14 @@ class HupunClient
         }
 
         curl_close($ch);
+
         return $reponse;
     }
 
     protected function logCommunicationError($request, $requestUrl, $errorCode, $responseTxt)
     {
         $localIp = isset($_SERVER['SERVER_ADDR']) ? $_SERVER['SERVER_ADDR'] : 'CLI';
-        $logger = new HupunLogger;
+        $logger = new HupunLogger();
         $logger->conf['log_file'] = rtrim($this->hupunSdkWorkDir, '\\/') . '/' . 'logs/hupun_comm_err_' . $this->appkey . '_' . date('Y-m-d') . '.log';
         $logger->conf['separator'] = '^_^';
         $logData = [
@@ -241,7 +243,7 @@ class HupunClient
             $this->apiVersion,
             $requestUrl,
             $errorCode,
-            str_replace("\n", '', $responseTxt)
+            str_replace("\n", '', $responseTxt),
         ];
         $logger->log($logData);
     }
@@ -299,6 +301,7 @@ class HupunClient
             $result->success = false;
             $result->error_code = $e->getCode();
             $result->error_msg = $e->getMessage();
+
             return $result;
         }
 
@@ -326,19 +329,20 @@ class HupunClient
             $result->success = false;
             $result->error_code = '0';
             $result->error_msg = 'HTTP_RESPONSE_NOT_WELL_FORMED';
+
             return $result;
         }
 
         // 如果HUPUN返回了错误码，记录到业务错误日志中
         if ($respObject->error_code) {
-            $logger = new HupunLogger;
+            $logger = new HupunLogger();
             $logger->conf['log_file'] = rtrim($this->hupunSdkWorkDir, '\\/') . '/' . 'logs/hupun_biz_err_' . $this->appkey . '_' . date('Y-m-d') . '.log';
             $logger->log([
                 date('Y-m-d H:i:s'),
                 $request,
                 json_encode($params),
                 $requestUrl,
-                $resp
+                $resp,
             ]);
         }
 
@@ -348,6 +352,7 @@ class HupunClient
     public function getMillisecond()
     {
         list($t1, $t2) = explode(' ', microtime());
+
         return sprintf('%.0f', (floatval($t1) + floatval($t2)) * 1000);
     }
 }
