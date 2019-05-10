@@ -349,10 +349,12 @@ class HupunClient
                 $respWellFormed = true;
             }
         } elseif ('xml' == $this->format) {
+            $boolPreviousValue = libxml_disable_entity_loader(true);
             $respObject = @simplexml_load_string($resp);
             if (false !== $respObject) {
                 $respWellFormed = true;
             }
+            libxml_disable_entity_loader($boolPreviousValue);
         }
 
         // 返回的 HTTP 文本不是标准 JSON 或者 XML，记下错误日志
