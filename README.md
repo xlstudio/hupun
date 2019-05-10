@@ -1,5 +1,5 @@
-# hupun-openapi-php-sdk
-万里牛ERP开放接口的 PHP SDK
+# hupun-open-api-php-sdk
+对接万里牛 ERP 开放接口的 PHP SDK
 ## 安装方法
 ```shell
 composer require xlstudio/hupun dev-master
