@@ -27,12 +27,12 @@ class HupunClient
 
     public function __construct($appKey = '', $secretKey = '', $options = [])
     {
-        $this->appKey = $appKey;
-        $this->secretKey = $secretKey;
+        $this->appKey = trim($appKey);
+        $this->secretKey = trim($secretKey);
 
         if ($options) {
             if ($options['api_url']) {
-                $this->gatewayUrl = $options['api_url'];
+                $this->gatewayUrl = trim($options['api_url']);
             }
             if ($options['api_work_dir']) {
                 $this->hupunSdkWorkDir = $options['api_work_dir'];
@@ -42,7 +42,7 @@ class HupunClient
 
     public function setGatewayUrl($gatewayUrl)
     {
-        $this->gatewayUrl = $gatewayUrl;
+        $this->gatewayUrl = trim($gatewayUrl);
     }
 
     public function setFormat($format)
@@ -235,7 +235,7 @@ class HupunClient
     {
         $localIp = isset($_SERVER['SERVER_ADDR']) ? $_SERVER['SERVER_ADDR'] : 'CLI';
         $logger = new HupunLogger();
-        $logger->conf['log_file'] = rtrim($this->hupunSdkWorkDir, '\\/') . '/' . 'logs/hupun_comm_err_' . $this->appKey . '_' . date('Y-m-d') . '.log';
+        $logger->conf['log_file'] = rtrim($this->hupunSdkWorkDir, '\\/') . '/hupun/hupun_comm_err_' . $this->appKey . '_' . date('Y-m-d') . '.log';
         $logger->conf['separator'] = '^_^';
         $logData = [
             date('Y-m-d H:i:s'),
@@ -387,7 +387,7 @@ class HupunClient
         // 如果 HUPUN 返回了错误码，记录到业务错误日志中
         if (!empty($respObject->error_code) || !empty($respObject->code)) {
             $logger = new HupunLogger();
-            $logger->conf['log_file'] = rtrim($this->hupunSdkWorkDir, '\\/') . '/' . 'logs/hupun_biz_err_' . $this->appKey . '_' . date('Y-m-d') . '.log';
+            $logger->conf['log_file'] = rtrim($this->hupunSdkWorkDir, '\\/') . '/hupun/hupun_biz_err_' . $this->appKey . '_' . date('Y-m-d') . '.log';
             $logger->log([
                 date('Y-m-d H:i:s'),
                 $request,
