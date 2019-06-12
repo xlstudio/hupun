@@ -2,7 +2,7 @@
 对接万里牛 ERP 开放接口的 PHP SDK
 ## 安装方法
 ```shell
-composer require xlstudio/hupun dev-master
+composer require xlstudio/hupun
 ```
 ## 使用方法
 单笔查询库存的接口
