@@ -125,13 +125,6 @@ class HupunClient
             curl_setopt($ch, CURLOPT_POST, true);
 
             if ($postMultipart) {
-                if (class_exists('\CURLFile')) {
-                    curl_setopt($ch, CURLOPT_SAFE_UPLOAD, true);
-                } else {
-                    if (defined('CURLOPT_SAFE_UPLOAD')) {
-                        curl_setopt($ch, CURLOPT_SAFE_UPLOAD, false);
-                    }
-                }
                 curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
             } else {
                 $header = ['content-type: application/x-www-form-urlencoded; charset=UTF-8'];
