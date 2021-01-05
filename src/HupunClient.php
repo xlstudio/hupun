@@ -71,7 +71,7 @@ class HupunClient
 
         $stringToBeSigned = $this->secretKey;
         foreach ($params as $k => $v) {
-            if (is_string($v)) {
+            if (!is_array($v)) {
                 if ('@' != substr($v, 0, 1)) {
                     if ($isOpen) {
                         $stringToBeSigned .= urlencode($k) . '=' . urlencode($v) . '&';
@@ -115,7 +115,7 @@ class HupunClient
             $postMultipart = false;
 
             foreach ($postFields as $k => $v) {
-                if (is_string($v)) {
+                if (!is_array($v)) {
                     if ('@' != substr($v, 0, 1)) {// 判断是不是文件上传
                         $postBodyString .= urlencode($k) . '=' . urlencode($v) . '&';
                     } else {// 文件上传用 multipart/form-data，否则用 www-form-urlencoded
