@@ -5,7 +5,7 @@ namespace Xlstudio\Hupun;
 class HupunLogger
 {
     public $conf = [
-        'separator' => "\t",
+        'separator' => " ",
         'log_file' => '',
     ];
 

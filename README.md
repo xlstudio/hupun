@@ -23,4 +23,4 @@ var_dump($hupunClient->execute('/inventories/erp/single', $params, 'get'));
 如果你是使用 Laravel 框架，可以参考使用：
 > https://github.com/xlstudio/laravel-hupun
 
-如有不明白的地方，请联系[QQ：2019809069]
+使用本 SDK 过程中如有问题，请联系作者协助解决：[QQ：2019809069, WECHAT: 2019809069]

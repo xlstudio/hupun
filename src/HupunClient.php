@@ -23,7 +23,7 @@ class HupunClient
 
     protected $apiVersion = 'v1';
 
-    protected $sdkVersion = 'hupun-open-api-php-sdk-20190508';
+    protected $sdkVersion = 'HUPUN-API-PHP-SDK-20230729';
 
     public function __construct($appKey = '', $secretKey = '', $options = [])
     {
@@ -88,6 +88,158 @@ class HupunClient
         $stringToBeSigned .= $this->secretKey;
 
         return strtoupper(md5($stringToBeSigned));
+    }
+
+    public function execute($request, $params, $method = 'post', $bestUrl = null)
+    {
+        $isOpen = false;
+        $apiParams = [];
+        $apiParams = $params;
+        $request = ltrim($request, '/');
+        if ($bestUrl) {
+            $gatewayUrl = $bestUrl;
+        } else {
+            $gatewayUrl = $this->gatewayUrl;
+        }
+        $gatewayUrl = rtrim($gatewayUrl, '/');
+
+        if ('erp' == substr($request, 0, 3)) {
+            $isOpen = true;
+            // 接口历史问题
+            if ('open/api' == substr($gatewayUrl, -8)) {
+                $gatewayUrl = str_replace('open/api', 'api', $gatewayUrl);
+            }
+
+            $requestUri = $request;
+
+            // 组装系统参数
+            $sysParams['_app'] = $this->appKey;
+            $sysParams['_s'] = '';
+            $sysParams['_t'] = $this->getMillisecond();
+
+            // 签名
+            $sysParams['_sign'] = $this->generateSign(array_merge($sysParams, $apiParams), true);
+        } else {
+            if(!preg_match('/v\d{1,}/', $gatewayUrl)) {
+                $requestUri = $this->apiVersion . '/' . $request;
+            }
+
+            // 组装系统参数
+            $sysParams['app_key'] = $this->appKey;
+            $sysParams['format'] = $this->format;
+            $sysParams['timestamp'] = $this->getMillisecond();
+
+            // 签名
+            $sysParams['sign'] = $this->generateSign(array_merge($sysParams, $apiParams));
+        }
+
+        // 系统参数放入 GET 请求串
+        $requestUrl = $gatewayUrl . '/' . $requestUri . '?';
+
+        $curlParams = $fileFields = [];
+        if ($isOpen) {
+            $mergeParams = array_merge($sysParams, $apiParams);
+            foreach ($mergeParams as $key => $value) {
+                if (is_array($value) && isset($value['type']) && isset($value['content'])) {
+                    $value['name'] = $key;
+                    $fileFields[$key] = $value;
+                    unset($mergeParams[$key]);
+                } elseif ('get' == $method) {
+                    $requestUrl .= urlencode($key) . '=' . urlencode($value) . '&';
+                }
+            }
+            $curlParams = $mergeParams;
+        } else {
+            foreach ($sysParams as $sysParamKey => $sysParamValue) {
+                $requestUrl .= $sysParamKey . '=' . urlencode($sysParamValue) . '&';
+            }
+            foreach ($apiParams as $key => $value) {
+                if (is_array($value) && isset($value['type']) && isset($value['content'])) {
+                    $value['name'] = $key;
+                    $fileFields[$key] = $value;
+                    unset($apiParams[$key]);
+                } elseif ('get' == $method) {
+                    $requestUrl .= $key . '=' . urlencode($value) . '&';
+                }
+            }
+            $curlParams = $apiParams;
+        }
+
+        $requestUrl = substr($requestUrl, 0, -1);
+
+        // 发起 HTTP 请求
+        try {
+            if (count($fileFields) > 0) {
+                $response = $this->curlWithMemoryFile($requestUrl, $curlParams, $fileFields);
+            } elseif ('get' == $method) {
+                $response = $this->curl($requestUrl);
+            } else {
+                $response = $this->curl($requestUrl, $curlParams);
+            }
+        } catch (\Exception $e) {
+            $this->logCommunicationError($request, $params, $requestUrl, 'HTTP_ERROR_' . $e->getCode(), $e->getMessage());
+            $result = new \stdClass();
+            $result->success = false;
+            $result->error_code = $e->getCode();
+            $result->error_msg = $e->getMessage();
+
+            return $result;
+        }
+
+        unset($apiParams);
+        unset($fileFields);
+
+        // 解析 HUPUN 返回结果
+        $responseWellFormed = false;
+        if ('json' == $this->format) {
+            $responseObject = json_decode($response);
+            if (null !== $responseObject) {
+                $responseWellFormed = true;
+            }
+        } elseif ('xml' == $this->format) {
+            $responseObject = @simplexml_load_string($response);
+            if (false !== $responseObject) {
+                $responseWellFormed = true;
+            }
+        }
+
+        // 返回的 HTTP 文本不是标准 JSON 或者 XML，记下错误日志
+        if (false === $responseWellFormed) {
+            $this->logCommunicationError($request, $params, $requestUrl, 'HTTP_RESPONSE_NOT_WELL_FORMED', $response);
+            $result = new \stdClass();
+            $result->success = false;
+            $result->error_code = '0';
+            $result->error_msg = 'HTTP_RESPONSE_NOT_WELL_FORMED';
+
+            return $result;
+        }
+
+        if (isset($responseObject->code)) {
+            $result = new \stdClass();
+            if ($responseObject->code) {
+                $result->success = false;
+                $result->error_code = $responseObject->code;
+                $result->error_msg = $responseObject->message;
+            } else {
+                $result->success = true;
+                $result->response = $responseObject->data;
+            }
+            $responseObject = $result;
+        }
+
+        // 如果 HUPUN 返回了错误码，记录到业务错误日志中
+        if (!empty($responseObject->error_code) || !empty($responseObject->code)) {
+            $this->logBusinessError($request, $params, $requestUrl, $response);
+        }
+
+        return $responseObject;
+    }
+
+    public function getMillisecond()
+    {
+        list($microFirst, $microSecond) = explode(' ', microtime());
+
+        return (float) sprintf('%.0f', (floatval($microFirst) + floatval($microSecond)) * 1000);
     }
 
     public function curl($url, $postFields = null)
@@ -232,179 +384,33 @@ class HupunClient
         return $response;
     }
 
-    protected function logCommunicationError($request, $requestUrl, $errorCode, $responseTxt)
+    protected function logCommunicationError($request, $params, $requestUrl, $errorCode, $response)
     {
-        $localIp = isset($_SERVER['SERVER_ADDR']) ? $_SERVER['SERVER_ADDR'] : 'CLI';
         $logger = new HupunLogger();
         $logger->conf['log_file'] = rtrim($this->hupunSdkWorkDir, '\\/') . '/hupun/hupun_comm_err_' . $this->appKey . '_' . date('Y-m-d') . '.log';
-        $logger->conf['separator'] = '^_^';
         $logData = [
-            date('Y-m-d H:i:s'),
-            $request,
-            $this->appKey,
-            $localIp,
-            PHP_OS,
-            $this->apiVersion,
+            '[' . date('Y-m-d H:i:s') . ']:',
+            '[' . $request . ']',
+            json_encode($params),
             $requestUrl,
             $errorCode,
-            str_replace("\n", '', $responseTxt),
+            '[' . str_replace("\n", '', $response) . ']',
         ];
         $logger->log($logData);
     }
 
-    public function execute($request, $params, $method = 'post', $bestUrl = null)
+    protected function logBusinessError($request, $params, $requestUrl, $response)
     {
-        $isOpen = false;
-        $apiParams = [];
-        $apiParams = $params;
-
-        if ('erp' == substr($request, 1, 3)) {
-            $isOpen = true;
-            $this->gatewayUrl = rtrim($this->gatewayUrl, '/');
-            if ('open/api' == substr($this->gatewayUrl, -8)) {
-                $this->gatewayUrl = str_replace('open/api', 'api', $this->gatewayUrl);
-            }
-
-            $requestMethod = ltrim($request, '/');
-
-            // 组装系统参数
-            $sysParams['_app'] = $this->appKey;
-            $sysParams['_s'] = '';
-            $sysParams['_t'] = $this->getMillisecond();
-
-            // 签名
-            $sysParams['_sign'] = $this->generateSign(array_merge($sysParams, $apiParams), true);
-        } else {
-            $requestMethod = $this->apiVersion . $request;
-
-            // 组装系统参数
-            $sysParams['app_key'] = $this->appKey;
-            $sysParams['format'] = $this->format;
-            $sysParams['timestamp'] = $this->getMillisecond();
-
-            // 签名
-            $sysParams['sign'] = $this->generateSign(array_merge($sysParams, $apiParams));
-        }
-
-        // 系统参数放入 GET 请求串
-        if ($bestUrl) {
-            $requestUrl = $bestUrl . '/' . $requestMethod . '?';
-        } else {
-            $requestUrl = $this->gatewayUrl . '/' . $requestMethod . '?';
-        }
-        $curlParams = $fileFields = [];
-        if ($isOpen) {
-            $mergeParams = array_merge($sysParams, $apiParams);
-            foreach ($mergeParams as $key => $value) {
-                if (is_array($value) && isset($value['type']) && isset($value['content'])) {
-                    $value['name'] = $key;
-                    $fileFields[$key] = $value;
-                    unset($mergeParams[$key]);
-                } elseif ('get' == $method) {
-                    $requestUrl .= urlencode($key) . '=' . urlencode($value) . '&';
-                }
-            }
-            $curlParams = $mergeParams;
-        } else {
-            foreach ($sysParams as $sysParamKey => $sysParamValue) {
-                $requestUrl .= $sysParamKey . '=' . urlencode($sysParamValue) . '&';
-            }
-            foreach ($apiParams as $key => $value) {
-                if (is_array($value) && isset($value['type']) && isset($value['content'])) {
-                    $value['name'] = $key;
-                    $fileFields[$key] = $value;
-                    unset($apiParams[$key]);
-                } elseif ('get' == $method) {
-                    $requestUrl .= $key . '=' . urlencode($value) . '&';
-                }
-            }
-            $curlParams = $apiParams;
-        }
-
-        $requestUrl = substr($requestUrl, 0, -1);
-
-        // 发起 HTTP 请求
-        try {
-            if (count($fileFields) > 0) {
-                $resp = $this->curlWithMemoryFile($requestUrl, $curlParams, $fileFields);
-            } elseif ('get' == $method) {
-                $resp = $this->curl($requestUrl);
-            } else {
-                $resp = $this->curl($requestUrl, $curlParams);
-            }
-        } catch (\Exception $e) {
-            $this->logCommunicationError($request, $requestUrl, 'HTTP_ERROR_' . $e->getCode(), $e->getMessage());
-            $result = new \stdClass();
-            $result->success = false;
-            $result->error_code = $e->getCode();
-            $result->error_msg = $e->getMessage();
-
-            return $result;
-        }
-
-        unset($apiParams);
-        unset($fileFields);
-
-        // 解析 HUPUN 返回结果
-        $respWellFormed = false;
-        if ('json' == $this->format) {
-            $respObject = json_decode($resp);
-            if (null !== $respObject) {
-                $respWellFormed = true;
-            }
-        } elseif ('xml' == $this->format) {
-            $boolPreviousValue = libxml_disable_entity_loader(true);
-            $respObject = @simplexml_load_string($resp);
-            if (false !== $respObject) {
-                $respWellFormed = true;
-            }
-            libxml_disable_entity_loader($boolPreviousValue);
-        }
-
-        // 返回的 HTTP 文本不是标准 JSON 或者 XML，记下错误日志
-        if (false === $respWellFormed) {
-            $this->logCommunicationError($request, $requestUrl, 'HTTP_RESPONSE_NOT_WELL_FORMED', $resp);
-            $result = new \stdClass();
-            $result->success = false;
-            $result->error_code = '0';
-            $result->error_msg = 'HTTP_RESPONSE_NOT_WELL_FORMED';
-
-            return $result;
-        }
-
-        if (isset($respObject->code)) {
-            $result = new \stdClass();
-            if ($respObject->code) {
-                $result->success = false;
-                $result->error_code = $respObject->code;
-                $result->error_msg = $respObject->message;
-            } else {
-                $result->success = true;
-                $result->response = $respObject->data;
-            }
-            $respObject = $result;
-        }
-
-        // 如果 HUPUN 返回了错误码，记录到业务错误日志中
-        if (!empty($respObject->error_code) || !empty($respObject->code)) {
-            $logger = new HupunLogger();
-            $logger->conf['log_file'] = rtrim($this->hupunSdkWorkDir, '\\/') . '/hupun/hupun_biz_err_' . $this->appKey . '_' . date('Y-m-d') . '.log';
-            $logger->log([
-                date('Y-m-d H:i:s'),
-                $request,
-                json_encode($params),
-                $requestUrl,
-                $resp,
-            ]);
-        }
-
-        return $respObject;
+        $logger = new HupunLogger();
+        $logger->conf['log_file'] = rtrim($this->hupunSdkWorkDir, '\\/') . '/hupun/hupun_biz_err_' . $this->appKey . '_' . date('Y-m-d') . '.log';
+        $logData = [
+            '[' . date('Y-m-d H:i:s') . ']:',
+            '[' . $request . ']',
+            json_encode($params),
+            $requestUrl,
+            '[' . $response . ']',
+        ];
+        $logger->log($logData);
     }
 
-    public function getMillisecond()
-    {
-        list($microFirst, $microSecond) = explode(' ', microtime());
-
-        return (float) sprintf('%.0f', (floatval($microFirst) + floatval($microSecond)) * 1000);
-    }
 }
