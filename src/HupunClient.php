@@ -23,7 +23,7 @@ class HupunClient
 
     protected $apiVersion = 'v1';
 
-    protected $sdkVersion = 'HUPUN-API-PHP-SDK-20230729';
+    protected $sdkVersion = 'HUPUN-API-PHP-SDK-20230808';
 
     public function __construct($appKey = '', $secretKey = '', $options = [])
     {
@@ -71,7 +71,7 @@ class HupunClient
 
         $stringToBeSigned = $this->secretKey;
         foreach ($params as $k => $v) {
-            if (!is_array($v)) {
+            if (! is_array($v)) {
                 if ('@' != substr($v, 0, 1)) {
                     if ($isOpen) {
                         $stringToBeSigned .= urlencode($k) . '=' . urlencode($v) . '&';
@@ -120,8 +120,10 @@ class HupunClient
             // 签名
             $sysParams['_sign'] = $this->generateSign(array_merge($sysParams, $apiParams), true);
         } else {
-            if(!preg_match('/v\d{1,}/', $gatewayUrl)) {
+            if (! preg_match('/v\d{1, }/', $gatewayUrl)) {
                 $requestUri = $this->apiVersion . '/' . $request;
+            } else {
+                $requestUri = $request;
             }
 
             // 组装系统参数
@@ -228,7 +230,7 @@ class HupunClient
         }
 
         // 如果 HUPUN 返回了错误码，记录到业务错误日志中
-        if (!empty($responseObject->error_code) || !empty($responseObject->code)) {
+        if (! empty($responseObject->error_code) || ! empty($responseObject->code)) {
             $this->logBusinessError($request, $params, $requestUrl, $response);
         }
 
@@ -267,7 +269,7 @@ class HupunClient
             $postMultipart = false;
 
             foreach ($postFields as $k => $v) {
-                if (!is_array($v)) {
+                if (! is_array($v)) {
                     if ('@' != substr($v, 0, 1)) {// 判断是不是文件上传
                         $postBodyString .= urlencode($k) . '=' . urlencode($v) . '&';
                     } else {// 文件上传用 multipart/form-data，否则用 www-form-urlencoded
