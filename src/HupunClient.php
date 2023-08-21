@@ -74,7 +74,7 @@ class HupunClient
             if (! is_array($v)) {
                 if ('@' != substr($v, 0, 1)) {
                     if ($isOpen) {
-                        $stringToBeSigned .= urlencode($k) . '=' . urlencode($v) . '&';
+                        $stringToBeSigned .= rawurlencode($k) . '=' . rawurlencode($v) . '&';
                     } else {
                         $stringToBeSigned .= "$k$v";
                     }
@@ -147,13 +147,13 @@ class HupunClient
                     $fileFields[$key] = $value;
                     unset($mergeParams[$key]);
                 } elseif ('get' == $method) {
-                    $requestUrl .= urlencode($key) . '=' . urlencode($value) . '&';
+                    $requestUrl .= rawurlencode($key) . '=' . rawurlencode($value) . '&';
                 }
             }
             $curlParams = $mergeParams;
         } else {
             foreach ($sysParams as $sysParamKey => $sysParamValue) {
-                $requestUrl .= $sysParamKey . '=' . urlencode($sysParamValue) . '&';
+                $requestUrl .= $sysParamKey . '=' . rawurlencode($sysParamValue) . '&';
             }
             foreach ($apiParams as $key => $value) {
                 if (is_array($value) && isset($value['type']) && isset($value['content'])) {
@@ -161,7 +161,7 @@ class HupunClient
                     $fileFields[$key] = $value;
                     unset($apiParams[$key]);
                 } elseif ('get' == $method) {
-                    $requestUrl .= $key . '=' . urlencode($value) . '&';
+                    $requestUrl .= $key . '=' . rawurlencode($value) . '&';
                 }
             }
             $curlParams = $apiParams;
@@ -271,7 +271,7 @@ class HupunClient
             foreach ($postFields as $k => $v) {
                 if (! is_array($v)) {
                     if ('@' != substr($v, 0, 1)) {// 判断是不是文件上传
-                        $postBodyString .= urlencode($k) . '=' . urlencode($v) . '&';
+                        $postBodyString .= rawurlencode($k) . '=' . rawurlencode($v) . '&';
                     } else {// 文件上传用 multipart/form-data，否则用 www-form-urlencoded
                         $postMultipart = true;
                         if (class_exists('\CURLFile')) {
@@ -393,7 +393,7 @@ class HupunClient
         $logData = [
             '[' . date('Y-m-d H:i:s') . ']:',
             '[' . $request . ']',
-            json_encode($params),
+            json_encode($params, JSON_UNESCAPED_UNICODE),
             $requestUrl,
             $errorCode,
             '[' . str_replace("\n", '', $response) . ']',
@@ -408,7 +408,7 @@ class HupunClient
         $logData = [
             '[' . date('Y-m-d H:i:s') . ']:',
             '[' . $request . ']',
-            json_encode($params),
+            json_encode($params, JSON_UNESCAPED_UNICODE),
             $requestUrl,
             '[' . $response . ']',
         ];
