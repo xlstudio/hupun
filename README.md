@@ -1,4 +1,4 @@
-# HUPUN-API-PHP-SDK-20230808
+# HUPUN-API-PHP-SDK-20230820
 用于对接万里牛 ERP 开放接口的 PHP SDK (B2C 接口 和 OPEN 接口通用)
 ## 安装方法
 ```shell

@@ -23,7 +23,7 @@ class HupunClient
 
     protected $apiVersion = 'v1';
 
-    protected $sdkVersion = 'HUPUN-API-PHP-SDK-20230808';
+    protected $sdkVersion = 'HUPUN-API-PHP-SDK-20230820';
 
     public function __construct($appKey = '', $secretKey = '', $options = [])
     {
