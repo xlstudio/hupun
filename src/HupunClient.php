@@ -74,13 +74,14 @@ class HupunClient
             if (! is_array($v)) {
                 if ('@' != substr($v, 0, 1)) {
                     if ($isOpen) {
-                        $stringToBeSigned .= rawurlencode($k) . '=' . rawurlencode($v) . '&';
+                        $v = str_replace('%2A', '*', urlencode($v));
+                        $stringToBeSigned .= $k . '=' . $v . '&';
                     } else {
                         $stringToBeSigned .= "$k$v";
                     }
                 }
             } else {
-                throw new \Exception('input param is error');
+                throw new \Exception('sign params is error');
             }
             unset($k, $v);
         }
@@ -147,7 +148,7 @@ class HupunClient
                     $fileFields[$key] = $value;
                     unset($mergeParams[$key]);
                 } elseif ('get' == $method) {
-                    $requestUrl .= rawurlencode($key) . '=' . rawurlencode($value) . '&';
+                    $requestUrl .= $key . '=' . rawurlencode($value) . '&';
                 }
             }
             $curlParams = $mergeParams;
@@ -237,13 +238,6 @@ class HupunClient
         return $responseObject;
     }
 
-    public function getMillisecond()
-    {
-        list($microFirst, $microSecond) = explode(' ', microtime());
-
-        return (float) sprintf('%.0f', (floatval($microFirst) + floatval($microSecond)) * 1000);
-    }
-
     public function curl($url, $postFields = null)
     {
         $ch = curl_init();
@@ -256,7 +250,7 @@ class HupunClient
         if ($this->connectTimeout) {
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $this->connectTimeout);
         }
-        curl_setopt($ch, CURLOPT_USERAGENT, 'hupun-openapi-php-sdk');
+        curl_setopt($ch, CURLOPT_USERAGENT, 'HUPUN-OPENAPI-PHP-SDK');
 
         // HTTPS 请求
         if (strlen($url) > 5 && 'https' == strtolower(substr($url, 0, 5))) {
@@ -271,7 +265,7 @@ class HupunClient
             foreach ($postFields as $k => $v) {
                 if (! is_array($v)) {
                     if ('@' != substr($v, 0, 1)) {// 判断是不是文件上传
-                        $postBodyString .= rawurlencode($k) . '=' . rawurlencode($v) . '&';
+                        $postBodyString .= $k . '=' . rawurlencode($v) . '&';
                     } else {// 文件上传用 multipart/form-data，否则用 www-form-urlencoded
                         $postMultipart = true;
                         if (class_exists('\CURLFile')) {
@@ -279,7 +273,7 @@ class HupunClient
                         }
                     }
                 } else {
-                    throw new \Exception('input param is error');
+                    throw new \Exception('The params you passed are incorrect.');
                 }
             }
             unset($k, $v);
@@ -384,6 +378,13 @@ class HupunClient
         curl_close($ch);
 
         return $response;
+    }
+
+    public function getMillisecond()
+    {
+        list($microFirst, $microSecond) = explode(' ', microtime());
+
+        return (float) sprintf('%.0f', (floatval($microFirst) + floatval($microSecond)) * 1000);
     }
 
     protected function logCommunicationError($request, $params, $requestUrl, $errorCode, $response)
